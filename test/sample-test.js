@@ -1,18 +1,23 @@
 const { expect } = require("chai");
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+describe("Vault", function () {
+  it("Should unlock Vault", async function () {
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+    const [deployer, hacker] = await ethers.getSigners();
+    
+    const password = 'Very strong password'
+    const password_enc = ethers.utils.formatBytes32String(password);
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
+    const Vault = await ethers.getContractFactory("Vault", deployer);
+    const vault = await Vault.deploy(password_enc);
+    await vault.deployed();
 
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
+    const bytes_storage = await ethers.provider.getStorageAt(vault.address, 1);
 
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
+    await vault.connect(hacker).unlock(bytes_storage);
+
+    expect(await vault.locked()).to.be.false;
+
+
   });
 });
